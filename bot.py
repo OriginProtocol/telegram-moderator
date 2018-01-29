@@ -39,7 +39,7 @@ def logger(bot, update):
         else:
             print("Something went wrong adding the user {}".format(user.id))
 
-    print("{} : {}".format(user.username,update.message.text))
+    print("{} : {}".format(user.username.encode('utf-8'),update.message.text.encode('utf-8')))
 
 # DB queries
 

@@ -17,7 +17,7 @@ This is a bot that logs public Group Chats to a Postgres Database.
  ```
  - Create a Telegram group.
  - Add your bot to the group like so: https://stackoverflow.com/questions/37338101/how-to-add-a-bot-to-a-telegram-group
- - Your bot only sees commands. Use `/setprivacy` with `@BotFather` in order to allow it to see all messages in a group.
+ - Use `/setprivacy` with `@BotFather` in order to allow it to see all messages in a group.
 
 ## Running the bot
 
