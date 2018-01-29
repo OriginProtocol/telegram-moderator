@@ -30,16 +30,16 @@ def logger(bot, update):
 
     if id_exists(user.id) == True:
         log_message(user.id, update.message.text)
-        print("message logged")
-
     else:
         add_user_success = add_user(user.id, user.first_name, user.last_name, user.username)
 
         if add_user_success == True:
             log_message(user.id, update.message.text)
-            print("user added & message logged")
+            print("User added")
         else:
-            print("Something went wrong adding the user!")
+            print("Something went wrong adding the user {}".format(user.id))
+
+    print("{} : {}".format(user.username,update.message.text))
 
 # DB queries
 
@@ -109,6 +109,8 @@ def main():
 
     # Start the Bot
     updater.start_polling()
+
+    print("Bot started")
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
