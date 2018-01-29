@@ -1,0 +1,3 @@
+psycopg2==2.7.3.2
+python-telegram-bot==9.0.0
+SQLAlchemy==1.2.2
