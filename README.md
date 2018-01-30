@@ -19,18 +19,13 @@ This is a bot that logs public Group Chats to a Postgres Database.
  - Add your bot to the group like so: https://stackoverflow.com/questions/37338101/how-to-add-a-bot-to-a-telegram-group
  - Use `/setprivacy` with `@BotFather` in order to allow it to see all messages in a group.
 
-## Running the bot
-
- - Create a Postgres database.
+## Database setup
+ - Store database URL in environment variable.
  ```
- $psql
-CREATE DATABASE telegram_bot_db;
-```
- - Copy `config.cnf.sample` to `config.cnf` and edit the databse connection URL. File should look like this:
+ export TELEGRAM_BOT_POSTGRES_URL="postgresql://<user>:<password>@localhost:5432/<databasename>"
  ```
-[postgres]
-postgres_url = postgresql://<user>:<password>@localhost:5432/<databasename>
-```
  - Run: `python model.py` to setup the DB tables.
+
+## Running the bot
  - Run: `python bot.py` to start logger
- - When a messages is successfully logged, `message logged` will be displayed.
+ - Messages will be displayed on `stdout` as they are logged.
