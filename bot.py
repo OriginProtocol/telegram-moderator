@@ -9,10 +9,13 @@ This bot logs all messages sent in a Telegram Group to a database.
 
 """
 
+from __future__ import print_function
+import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 import os
 from model import User, Message, session
+from time import strftime
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -35,11 +38,17 @@ def logger(bot, update):
 
         if add_user_success == True:
             log_message(user.id, update.message.text)
-            print("User added")
+            print("User added: {}".format(user.id))
         else:
-            print("Something went wrong adding the user {}".format(user.id))
+            print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
 
-    print("{} : {}".format(user.username.encode('utf-8'),update.message.text.encode('utf-8')))
+    if update.message.text:
+        print("{} {} ({}) : {}".format(
+            strftime("%Y-%m-%dT%H:%M:%S"),
+            user.id,
+            (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'),
+            update.message.text.encode('utf-8'))
+        )
 
 # DB queries
 
