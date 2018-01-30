@@ -39,4 +39,4 @@ from sqlalchemy.orm import sessionmaker
 session = sessionmaker()
 session.configure(bind=engine)
 Base.metadata.create_all(engine)
-print "Created database model"
+print ("Created database model")
