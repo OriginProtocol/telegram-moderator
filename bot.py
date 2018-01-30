@@ -12,16 +12,9 @@ This bot logs all messages sent in a Telegram Group to a database.
 from __future__ import print_function
 import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-import logging
 import os
 from model import User, Message, session
 from time import strftime
-
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
-logger = logging.getLogger(__name__)
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
@@ -95,7 +88,8 @@ def add_user(user_id, first_name, last_name, username):
 
 def error(bot, update, error):
     """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, error)
+    print("Update '{}' caused error '{}'".format(update, error), file=sys.stderr)
+
 
 
 def main():
