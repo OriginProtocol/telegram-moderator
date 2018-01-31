@@ -26,6 +26,10 @@ This is a bot that logs public Group Chats to a Postgres Database.
  ```
  - Run: `python model.py` to setup the DB tables.
 
-## Running the bot
+## Running the bot locally
  - Run: `python bot.py` to start logger
  - Messages will be displayed on `stdout` as they are logged.
+
+## On Heroku
+ - You must enable the worker on Heroku app dashboard. (By default it is off.)
+ 
