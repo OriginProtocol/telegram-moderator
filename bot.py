@@ -16,6 +16,7 @@ import os
 from model import User, Message, session
 from time import strftime
 import re
+import unidecode
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
@@ -24,9 +25,18 @@ import re
 def security_check_message(bot, update):
     """ Test message for security violations """
 
-    r = re.compile(r'FART')
-    if r.match(update.message.text):
-        print("Matched!")
+    ban_patterns = [
+        '[0-9a-fA-F]{40,40}',
+        'Fart',
+    ]
+
+    # Remove accents from letters
+    message = unidecode.unidecode(update.message.text)
+
+    regexp_pattern = "|".join(ban_patterns)
+    r = re.compile(regexp_pattern, re.IGNORECASE)
+    if r.search(message):
+        print("Bannable match: {}".format(update.message.text.encode('utf-8')))
         # Delete the message
         update.message.delete()
 
