@@ -15,9 +15,25 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os
 from model import User, Message, session
 from time import strftime
+import re
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
+
+
+def security_check_message(bot, update):
+    """ Test message for security violations """
+
+    r = re.compile(r'FART')
+    if r.match(update.message.text):
+        print("Matched!")
+        # Delete the message
+        update.message.delete()
+
+        # # Ban the user
+        # kick_success = update.message.chat.kick_member(update.message.from_user.id)
+        # print(kick_success)
+
 
 def logger(bot, update):
     """Primary Logger. Handles incoming bot messages and saves them to DB"""
@@ -43,8 +59,13 @@ def logger(bot, update):
             update.message.text.encode('utf-8'))
         )
 
-# DB queries
+    try:
+        security_check_message(bot, update)
+    except Exception as e:
+        print(e)
 
+
+# DB queries
 def id_exists(id_value):
     s = session()
     bool_set = False
@@ -55,6 +76,7 @@ def id_exists(id_value):
     s.close()
 
     return bool_set
+
 
 def log_message(user_id, user_message):
 
@@ -67,6 +89,7 @@ def log_message(user_id, user_message):
 
     except Exception as e:
         print(e)
+
 
 def add_user(user_id, first_name, last_name, username):
     try:
@@ -89,7 +112,6 @@ def add_user(user_id, first_name, last_name, username):
 def error(bot, update, error):
     """Log Errors caused by Updates."""
     print("Update '{}' caused error '{}'".format(update, error), file=sys.stderr)
-
 
 
 def main():
