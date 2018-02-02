@@ -22,10 +22,7 @@ import unidecode
 class TelegramMonitorBot:
 
     def __init__(self):
-
         self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
-
-        print (self.safe_user_ids)
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
         self.message_ban_re = re.compile(self.message_ban_patterns, re.IGNORECASE)
@@ -98,10 +95,10 @@ class TelegramMonitorBot:
                     update.message.text.encode('utf-8'))
                 )
 
-        if not update.message.from_user.id in self.safe_user_ids:
-            # Security checks
-            self.security_check_username(bot, update)
-            self.security_check_message(bot, update)
+            if not update.message.from_user.id in self.safe_user_ids:
+                # Security checks
+                self.security_check_username(bot, update)
+                self.security_check_message(bot, update)
 
         except Exception as e:
             print(e)
