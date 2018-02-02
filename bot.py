@@ -22,6 +22,8 @@ import unidecode
 class TelegramMonitorBot:
 
     def __init__(self):
+        self.debug = os.environ.get('DEBUG') is not None
+
         self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
@@ -40,6 +42,7 @@ class TelegramMonitorBot:
         print ("Not banning in testing")
 
 
+
     def security_check_username(self, bot, update):
         """ Test username for security violations """
 
@@ -47,11 +50,15 @@ class TelegramMonitorBot:
             + update.message.from_user.last_name)
         if self.name_ban_re.search(full_name):
             # Ban the user
+            if self.debug:
+                update.message.reply_text("DEBUG: Ban match full name: {}".format(full_name.encode('utf-8')))
             print("Ban match full name: {}".format(full_name.encode('utf-8')))
             self.ban_user(update)
 
         if self.name_ban_re.search(update.message.from_user.username or ''):
             # Ban the user
+            if self.debug:
+                update.message.reply_text("DEBUG: Ban match username: {}".format(update.message.from_user.username.encode('utf-8')))
             print("Ban match username: {}".format(update.message.from_user.username.encode('utf-8')))
             self.ban_user(update)
 
@@ -62,12 +69,16 @@ class TelegramMonitorBot:
         message = unidecode.unidecode(update.message.text)
         if self.message_hide_re.search(message):
             # Delete the message
+            if self.debug:
+                update.message.reply_text("DEBUG: Hide match: {}".format(update.message.text.encode('utf-8')))
             print("Hide match: {}".format(update.message.text.encode('utf-8')))
             update.message.delete()
 
         if self.message_ban_re.search(message):
             # Ban the user
-            print("Ban match: {}".format(update.message.text.encode('utf-8')))
+            if self.debug:
+                update.message.reply_text("DEBUG: Ban message match: {}".format(update.message.text.encode('utf-8')))
+            print("Ban message match: {}".format(update.message.text.encode('utf-8')))
             self.ban_user(update)
 
 
