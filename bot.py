@@ -22,28 +22,47 @@ import unidecode
 class TelegramMonitorBot:
 
     def __init__(self):
-        # '[0-9a-fA-F]{40,40}',
+
+        self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
+
+        print (self.safe_user_ids)
+
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
         self.message_ban_re = re.compile(self.message_ban_patterns, re.IGNORECASE)
 
         self.message_hide_patterns = os.environ['MESSAGE_HIDE_PATTERNS']
         self.message_hide_re = re.compile(self.message_hide_patterns, re.IGNORECASE)
 
+        self.name_ban_patterns = os.environ['NAME_BAN_PATTERNS']
+        self.name_ban_re = re.compile(self.name_ban_patterns, re.IGNORECASE)
+
+
+    def ban_user(self, update):
+        """ Ban user from update if not listed as safe user """
+        # kick_success = update.message.chat.kick_member(update.message.from_user.id)
+        print ("Not banning in testing")
+
+
     def security_check_username(self, bot, update):
-    #     """ Test username for security violations """
-    #     # ban_patterns = [
-    #     #     'origin',
-    #     #     'admin',
-    #     #     'official',
-    #     # ]
-        pass
+        """ Test username for security violations """
+
+        full_name = (update.message.from_user.first_name + " "
+            + update.message.from_user.last_name)
+        if self.name_ban_re.search(full_name):
+            # Ban the user
+            print("Ban match full name: {}".format(full_name.encode('utf-8')))
+            self.ban_user(update)
+
+        if self.name_ban_re.search(update.message.from_user.username or ''):
+            # Ban the user
+            print("Ban match username: {}".format(update.message.from_user.username.encode('utf-8')))
+            self.ban_user(update)
 
     def security_check_message(self, bot, update):
         """ Test message for security violations """
 
         # Remove accents from letters (é->e, ñ->n, etc...)
         message = unidecode.unidecode(update.message.text)
-
         if self.message_hide_re.search(message):
             # Delete the message
             print("Hide match: {}".format(update.message.text.encode('utf-8')))
@@ -52,8 +71,7 @@ class TelegramMonitorBot:
         if self.message_ban_re.search(message):
             # Ban the user
             print("Ban match: {}".format(update.message.text.encode('utf-8')))
-            # kick_success = update.message.chat.kick_member(update.message.from_user.id)
-            # print(kick_success)
+            self.ban_user(update)
 
 
     def logger(self, bot, update):
@@ -80,8 +98,11 @@ class TelegramMonitorBot:
                     update.message.text.encode('utf-8'))
                 )
 
+        if not update.message.from_user.id in self.safe_user_ids:
+            # Security checks
             self.security_check_username(bot, update)
             self.security_check_message(bot, update)
+
         except Exception as e:
             print(e)
 
