@@ -38,9 +38,8 @@ class TelegramMonitorBot:
 
     def ban_user(self, update):
         """ Ban user from update if not listed as safe user """
-        # kick_success = update.message.chat.kick_member(update.message.from_user.id)
-        print ("Not banning in testing")
-
+        kick_success = update.message.chat.kick_member(update.message.from_user.id)
+        # print ("Not banning in testing")
 
 
     def security_check_username(self, bot, update):
