@@ -29,16 +29,14 @@ class TelegramMonitorBot:
         self.message_hide_patterns = os.environ['MESSAGE_HIDE_PATTERNS']
         self.message_hide_re = re.compile(self.message_hide_patterns, re.IGNORECASE)
 
-    # # Define a few command handlers. These usually take the two arguments bot and
-    # # update. Error handlers also receive the raised TelegramError object in error.
-    # def security_check_username(bot, update):
+    def security_check_username(self, bot, update):
     #     """ Test username for security violations """
     #     # ban_patterns = [
     #     #     'origin',
     #     #     'admin',
     #     #     'official',
     #     # ]
-    #     pass
+        pass
 
     def security_check_message(self, bot, update):
         """ Test message for security violations """
@@ -53,36 +51,35 @@ class TelegramMonitorBot:
 
         if self.message_ban_re.search(message):
             # Ban the user
-            kick_success = update.message.chat.kick_member(update.message.from_user.id)
-            print(kick_success)
             print("Ban match: {}".format(update.message.text.encode('utf-8')))
+            # kick_success = update.message.chat.kick_member(update.message.from_user.id)
+            # print(kick_success)
 
 
     def logger(self, bot, update):
         """Primary Logger. Handles incoming bot messages and saves them to DB"""
-
-        user = update.message.from_user
-
-        if id_exists(user.id) == True:
-            log_message(user.id, update.message.text)
-        else:
-            add_user_success = add_user(user.id, user.first_name, user.last_name, user.username)
-
-            if add_user_success == True:
-                log_message(user.id, update.message.text)
-                print("User added: {}".format(user.id))
-            else:
-                print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
-
-        if update.message.text:
-            print("{} {} ({}) : {}".format(
-                strftime("%Y-%m-%dT%H:%M:%S"),
-                user.id,
-                (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'),
-                update.message.text.encode('utf-8'))
-            )
-
         try:
+            user = update.message.from_user
+
+            if self.id_exists(user.id):
+                self.log_message(user.id, update.message.text)
+            else:
+                add_user_success = add_user(user.id, user.first_name, user.last_name, user.username)
+
+                if add_user_success:
+                    self.log_message(user.id, update.message.text)
+                    print("User added: {}".format(user.id))
+                else:
+                    print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
+
+            if update.message.text:
+                print("{} {} ({}) : {}".format(
+                    strftime("%Y-%m-%dT%H:%M:%S"),
+                    user.id,
+                    (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'),
+                    update.message.text.encode('utf-8'))
+                )
+
             self.security_check_username(bot, update)
             self.security_check_message(bot, update)
         except Exception as e:
@@ -149,12 +146,17 @@ class TelegramMonitorBot:
         # on different commands - answer in Telegram
 
         # on noncommand i.e message - echo the message on Telegram
-        dp.add_handler(MessageHandler(Filters.text, self.logger))
+        dp.add_handler(MessageHandler(
+            Filters.text,
+            lambda bot, update : self.logger(bot, update)
+        ))
 
         # dp.add_handler(MessageHandler(Filters.status_update, status))
 
         # log all errors
-        dp.add_error_handler(self.error)
+        dp.add_error_handler(
+            lambda bot, update, error : self.error(bot, update, error)
+        )
 
         # Start the Bot
         updater.start_polling()
