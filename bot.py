@@ -89,7 +89,7 @@ class TelegramMonitorBot:
             if self.id_exists(user.id):
                 self.log_message(user.id, update.message.text)
             else:
-                add_user_success = add_user(user.id, user.first_name, user.last_name, user.username)
+                add_user_success = self.add_user(user.id, user.first_name, user.last_name, user.username)
 
                 if add_user_success:
                     self.log_message(user.id, update.message.text)
