@@ -27,13 +27,13 @@ class TelegramMonitorBot:
         self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
-        self.message_ban_re = re.compile(self.message_ban_patterns, re.IGNORECASE)
+        self.message_ban_re = re.compile(self.message_ban_patterns, re.IGNORECASE | re.VERBOSE)
 
         self.message_hide_patterns = os.environ['MESSAGE_HIDE_PATTERNS']
-        self.message_hide_re = re.compile(self.message_hide_patterns, re.IGNORECASE)
+        self.message_hide_re = re.compile(self.message_hide_patterns, re.IGNORECASE | re.VERBOSE)
 
         self.name_ban_patterns = os.environ['NAME_BAN_PATTERNS']
-        self.name_ban_re = re.compile(self.name_ban_patterns, re.IGNORECASE)
+        self.name_ban_re = re.compile(self.name_ban_patterns, re.IGNORECASE | re.VERBOSE)
 
 
     def ban_user(self, update):
