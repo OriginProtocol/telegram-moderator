@@ -1,6 +1,6 @@
-# Telegram Group Chat Logger
+# Telegram Bot
 
-This is a bot that logs public Group Chats to a Postgres Database.
+*NOTE* Development version of bot than does message monitoring and more.
 
 ## Installation
 

@@ -79,6 +79,8 @@ class TelegramMonitorBot:
                 update.message.reply_text("DEBUG: Ban message match: {}".format(update.message.text.encode('utf-8')))
             print("Ban message match: {}".format(update.message.text.encode('utf-8')))
             self.ban_user(update)
+            # Any message that causes a ban gets deleted
+            update.message.delete()
 
 
     def logger(self, bot, update):
