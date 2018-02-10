@@ -26,17 +26,34 @@ class Message(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('telegram_users.id'), nullable=False)
     message = Column(String)
-    # Use default=func.now() to set the default hiring time
-    # of an Employee to be the current time when an
-    # Employee record was created
+    time = Column(DateTime, default=func.now())
+
+
+class MessageHide(Base):
+    __tablename__ = 'telegram_message_hides'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('telegram_users.id'), nullable=False)
+    message = Column(String)
+    time = Column(DateTime, default=func.now())
+
+
+class UserBan(Base):
+    __tablename__ = 'telegram_user_bans'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('telegram_users.id'), nullable=False)
+    reason = Column(String)
     time = Column(DateTime, default=func.now())
 
 
 from sqlalchemy import create_engine
 engine = create_engine(postgres_url)
 
+print (engine)
+
 from sqlalchemy.orm import sessionmaker
 session = sessionmaker()
 session.configure(bind=engine)
 Base.metadata.create_all(engine)
+
+
 print ("Created database model")

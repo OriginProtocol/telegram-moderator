@@ -13,7 +13,7 @@ from __future__ import print_function
 import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os
-from model import User, Message, session
+from model import User, Message, MessageHide, UserBan, session
 from time import strftime
 import re
 import unidecode
@@ -27,19 +27,27 @@ class TelegramMonitorBot:
         self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
-        self.message_ban_re = re.compile(self.message_ban_patterns, re.IGNORECASE | re.VERBOSE)
+        self.message_ban_re = re.compile(
+            self.message_ban_patterns,
+            re.IGNORECASE | re.VERBOSE)
+            if self.message_ban_patterns else None
 
         self.message_hide_patterns = os.environ['MESSAGE_HIDE_PATTERNS']
-        self.message_hide_re = re.compile(self.message_hide_patterns, re.IGNORECASE | re.VERBOSE)
+        self.message_hide_re = re.compile(
+            self.message_hide_patterns,
+            re.IGNORECASE | re.VERBOSE)
+            if self.message_hide_patterns else None
 
         self.name_ban_patterns = os.environ['NAME_BAN_PATTERNS']
-        self.name_ban_re = re.compile(self.name_ban_patterns, re.IGNORECASE | re.VERBOSE)
+        self.name_ban_re = re.compile(
+            self.name_ban_patterns,
+            re.IGNORECASE | re.VERBOSE)
+            if self.name_ban_patterns else None
 
 
     def ban_user(self, update):
         """ Ban user """
         kick_success = update.message.chat.kick_member(update.message.from_user.id)
-        # print ("Not banning in testing")
 
 
     def security_check_username(self, bot, update):
@@ -47,40 +55,60 @@ class TelegramMonitorBot:
 
         full_name = (update.message.from_user.first_name + " "
             + update.message.from_user.last_name)
-        if self.name_ban_re.search(full_name):
+        if self.name_ban_re and self.name_ban_re.search(full_name):
             # Ban the user
             if self.debug:
                 update.message.reply_text("DEBUG: Ban match full name: {}".format(full_name.encode('utf-8')))
             print("Ban match full name: {}".format(full_name.encode('utf-8')))
             self.ban_user(update)
 
-        if self.name_ban_re.search(update.message.from_user.username or ''):
+        if self.name_ban_re and self.name_ban_re.search(update.message.from_user.username or ''):
             # Ban the user
             if self.debug:
                 update.message.reply_text("DEBUG: Ban match username: {}".format(update.message.from_user.username.encode('utf-8')))
             print("Ban match username: {}".format(update.message.from_user.username.encode('utf-8')))
             self.ban_user(update)
 
+
     def security_check_message(self, bot, update):
         """ Test message for security violations """
 
         # Remove accents from letters (é->e, ñ->n, etc...)
         message = unidecode.unidecode(update.message.text)
-        if self.message_hide_re.search(message):
+        # TODO: Replace lookalike unicode characters
+
+        if self.message_hide_re and self.message_hide_re.search(message):
             # Delete the message
             if self.debug:
                 update.message.reply_text("DEBUG: Hide match: {}".format(update.message.text.encode('utf-8')))
             print("Hide match: {}".format(update.message.text.encode('utf-8')))
             update.message.delete()
+            # Log in database
+            s = session()
+            messageHide = MessageHide(
+                user_id=update.message.from_user.id,
+                message=update.message.text)
+            s.add(messageHide)
+            s.commit()
+            s.close()
 
-        if self.message_ban_re.search(message):
+        if self.message_ban_re and self.message_ban_re.search(message):
             # Ban the user
             if self.debug:
                 update.message.reply_text("DEBUG: Ban message match: {}".format(update.message.text.encode('utf-8')))
             print("Ban message match: {}".format(update.message.text.encode('utf-8')))
+            # Ban the user
             self.ban_user(update)
             # Any message that causes a ban gets deleted
             update.message.delete()
+            # Log in database
+            s = session()
+            userBan = UserBan(
+                user_id=update.message.from_user.id,
+                reason=update.message.text)
+            s.add(userBan)
+            s.commit()
+            s.close()
 
 
     def logger(self, bot, update):
@@ -91,7 +119,11 @@ class TelegramMonitorBot:
             if self.id_exists(user.id):
                 self.log_message(user.id, update.message.text)
             else:
-                add_user_success = self.add_user(user.id, user.first_name, user.last_name, user.username)
+                add_user_success = self.add_user(
+                    user.id,
+                    user.first_name,
+                    user.last_name,
+                    user.username)
 
                 if add_user_success:
                     self.log_message(user.id, update.message.text)
@@ -130,14 +162,12 @@ class TelegramMonitorBot:
 
 
     def log_message(self, user_id, user_message):
-
         try:
             s = session()
-            msg1 = Message(user_id=user_id,message=user_message)
+            msg1 = Message(user_id=user_id, message=user_message)
             s.add(msg1)
             s.commit()
             s.close()
-
         except Exception as e:
             print(e)
 
