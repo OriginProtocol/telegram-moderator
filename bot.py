@@ -21,28 +21,29 @@ import unidecode
 
 class TelegramMonitorBot:
 
+
     def __init__(self):
         self.debug = os.environ.get('DEBUG') is not None
 
         self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
-        self.message_ban_re = re.compile(
+        self.message_ban_re = (re.compile(
             self.message_ban_patterns,
             re.IGNORECASE | re.VERBOSE)
-            if self.message_ban_patterns else None
+            if self.message_ban_patterns else None)
 
         self.message_hide_patterns = os.environ['MESSAGE_HIDE_PATTERNS']
-        self.message_hide_re = re.compile(
+        self.message_hide_re = (re.compile(
             self.message_hide_patterns,
             re.IGNORECASE | re.VERBOSE)
-            if self.message_hide_patterns else None
+            if self.message_hide_patterns else None)
 
         self.name_ban_patterns = os.environ['NAME_BAN_PATTERNS']
-        self.name_ban_re = re.compile(
+        self.name_ban_re = (re.compile(
             self.name_ban_patterns,
             re.IGNORECASE | re.VERBOSE)
-            if self.name_ban_patterns else None
+            if self.name_ban_patterns else None)
 
 
     def ban_user(self, update):
@@ -116,6 +117,9 @@ class TelegramMonitorBot:
         try:
             user = update.message.from_user
 
+            # TODO: Limit bot to certain chats
+            # print ("Chat id: {}".format(update.effective_chat.id))
+
             if self.id_exists(user.id):
                 self.log_message(user.id, update.message.text)
             else:
@@ -145,7 +149,7 @@ class TelegramMonitorBot:
                 self.security_check_message(bot, update)
 
         except Exception as e:
-            print(e)
+            print("Error: {}".format(e))
 
 
     # DB queries
@@ -169,7 +173,7 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
         except Exception as e:
-            print(e)
+            print("Error: {}".format(e))
 
 
     def add_user(self, user_id, first_name, last_name, username):
@@ -185,7 +189,7 @@ class TelegramMonitorBot:
             s.close()
             return id_exists(user_id)
         except Exception as e:
-            print(e)
+            print("Error: {}".format(e))
 
 
     def error(self, bot, update, error):
