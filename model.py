@@ -48,12 +48,9 @@ class UserBan(Base):
 from sqlalchemy import create_engine
 engine = create_engine(postgres_url)
 
-print (engine)
-
 from sqlalchemy.orm import sessionmaker
 session = sessionmaker()
 session.configure(bind=engine)
 Base.metadata.create_all(engine)
-
 
 print ("Created database model")

@@ -76,9 +76,28 @@ class TelegramMonitorBot:
 
         # Remove accents from letters (é->e, ñ->n, etc...)
         message = unidecode.unidecode(update.message.text)
-        # TODO: Replace lookalike unicode characters
+        # TODO: Replace lookalike unicode characters:
+        # https://github.com/wanderingstan/Confusables
 
-        if self.message_hide_re and self.message_hide_re.search(message):
+        if self.message_ban_re and self.message_ban_re.search(message):
+            # Ban the user
+            if self.debug:
+                update.message.reply_text("DEBUG: Ban message match: {}".format(update.message.text.encode('utf-8')))
+            print("Ban message match: {}".format(update.message.text.encode('utf-8')))
+            # Any message that causes a ban gets deleted
+            update.message.delete()
+            # Ban the user
+            self.ban_user(update)
+            # Log in database
+            s = session()
+            userBan = UserBan(
+                user_id=update.message.from_user.id,
+                reason=update.message.text)
+            s.add(userBan)
+            s.commit()
+            s.close()
+
+        elif self.message_hide_re and self.message_hide_re.search(message):
             # Delete the message
             if self.debug:
                 update.message.reply_text("DEBUG: Hide match: {}".format(update.message.text.encode('utf-8')))
@@ -90,24 +109,6 @@ class TelegramMonitorBot:
                 user_id=update.message.from_user.id,
                 message=update.message.text)
             s.add(messageHide)
-            s.commit()
-            s.close()
-
-        if self.message_ban_re and self.message_ban_re.search(message):
-            # Ban the user
-            if self.debug:
-                update.message.reply_text("DEBUG: Ban message match: {}".format(update.message.text.encode('utf-8')))
-            print("Ban message match: {}".format(update.message.text.encode('utf-8')))
-            # Ban the user
-            self.ban_user(update)
-            # Any message that causes a ban gets deleted
-            update.message.delete()
-            # Log in database
-            s = session()
-            userBan = UserBan(
-                user_id=update.message.from_user.id,
-                reason=update.message.text)
-            s.add(userBan)
             s.commit()
             s.close()
 
