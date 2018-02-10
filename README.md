@@ -52,7 +52,11 @@ read -r -d '' MESSAGE_BAN_PATTERNS << 'EOF'
 EOF
 ```
 
-## Running the bot
- - Run: `python bot.py` to start.
+## Running
+
+### Locally
+ - Run: `python bot.py` to start logger
  - Messages will be displayed on `stdout` as they are logged.
 
+### On Heroku
+ - You must enable the worker on Heroku app dashboard. (By default it is off.)
