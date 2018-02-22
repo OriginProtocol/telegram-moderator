@@ -17,7 +17,7 @@ from model import User, Message, MessageHide, UserBan, session
 from time import strftime
 import re
 import unidecode
-
+from mwt import MWT
 
 class TelegramMonitorBot:
 
@@ -54,6 +54,11 @@ class TelegramMonitorBot:
         self.ban_feedback_message = "You have been banned from this group for posting prohibited content."
         self.ban_name_feedback_message = "You have been banned from this group for having a misleading username."
         self.hide_feedback_message = "Your last message was deleted for having prohibited content."
+
+    @MWT(timeout=60*60)
+    def get_admin_ids(self, bot, chat_id):
+        """Returns a list of admin IDs for a given chat. Results are cached for 1 hour."""
+        return [admin.user.id for admin in bot.get_chat_administrators(chat_id)]
 
     def ban_user(self, update):
         """ Ban user """
@@ -209,10 +214,12 @@ class TelegramMonitorBot:
                     update.message.text.encode('utf-8'))
                 )
 
-            if not update.message.from_user.id in self.safe_user_ids:
+            if update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id):
                 # Security checks
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
+            else:
+                print("Skipping checks. User is admin: {}".format(user.id))
 
         except Exception as e:
             print("Error: {}".format(e))
