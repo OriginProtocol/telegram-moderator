@@ -25,7 +25,7 @@ class TelegramMonitorBot:
     def __init__(self):
         self.debug = os.environ.get('DEBUG') is not None
 
-        self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
+        self.safe_user_ids = list(map(int, os.environ['SAFE_USER_IDS'].split(',')))
         print ("safe_user_ids")
         print (self.safe_user_ids)
 
