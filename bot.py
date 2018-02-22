@@ -26,6 +26,8 @@ class TelegramMonitorBot:
         self.debug = os.environ.get('DEBUG') is not None
 
         self.safe_user_ids = map(int, os.environ['SAFE_USER_IDS'].split(','))
+        print ("safe_user_ids")
+        print (self.safe_user_ids)
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
         self.message_ban_re = (re.compile(
@@ -144,7 +146,7 @@ class TelegramMonitorBot:
                     update.message.text.encode('utf-8'))
                 )
 
-            if not update.message.from_user.id in self.safe_user_ids:
+            if not (update.message.from_user.id in self.safe_user_ids):
                 # Security checks
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
