@@ -26,13 +26,13 @@ class TelegramMonitorBot:
         self.debug = os.environ.get('DEBUG') is not None
 
         # Users to notify of violoations
-        self.notify_user_ids = list(
-            map(int, os.environ['NOTIFY_USER_IDS'].split(','))
+        self.notify_user_ids = (
+            list(map(int, os.environ['NOTIFY_USER_IDS'].split(',')))
             if "NOTIFY_USER_IDS" in os.environ else [])
 
         # List of chat ids that bot should monitor
-        self.chat_ids = list(
-            map(int, os.environ['CHAT_IDS'].split(','))
+        self.chat_ids = (
+            list(map(int, os.environ['CHAT_IDS'].split(',')))
             if "CHAT_IDS" in os.environ else [])
 
         # Regex for message patterns that cause user ban
