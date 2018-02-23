@@ -25,26 +25,31 @@ class TelegramMonitorBot:
     def __init__(self):
         self.debug = os.environ.get('DEBUG') is not None
 
+        # Users to notify of violoations
         self.notify_user_ids = list(
             map(int, os.environ['NOTIFY_USER_IDS'].split(','))
             if "NOTIFY_USER_IDS" in os.environ else [])
 
+        # List of chat ids that bot should monitor
         self.chat_ids = list(
             map(int, os.environ['CHAT_IDS'].split(','))
             if "CHAT_IDS" in os.environ else [])
 
+        # Regex for message patterns that cause user ban
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
         self.message_ban_re = (re.compile(
             self.message_ban_patterns,
             re.IGNORECASE | re.VERBOSE)
             if self.message_ban_patterns else None)
 
+        # Regex for message patterns that cause message to be hidden
         self.message_hide_patterns = os.environ['MESSAGE_HIDE_PATTERNS']
         self.message_hide_re = (re.compile(
             self.message_hide_patterns,
             re.IGNORECASE | re.VERBOSE)
             if self.message_hide_patterns else None)
 
+        # Regex for name patterns that cause user to be banned
         self.name_ban_patterns = os.environ['NAME_BAN_PATTERNS']
         self.name_ban_re = (re.compile(
             self.name_ban_patterns,
@@ -248,7 +253,7 @@ class TelegramMonitorBot:
             s.add(user)
             s.commit()
             s.close()
-            return id_exists(user_id)
+            return self.id_exists(user_id)
         except Exception as e:
             print("Error: {}".format(e))
 
