@@ -25,13 +25,13 @@ class TelegramMonitorBot:
     def __init__(self):
         self.debug = os.environ.get('DEBUG') is not None
 
-        self.safe_user_ids = list(
-            map(int, os.environ['SAFE_USER_IDS'].split(','))
-            if "SAFE_USER_IDS" in os.environ else [])
-
         self.notify_user_ids = list(
             map(int, os.environ['NOTIFY_USER_IDS'].split(','))
             if "NOTIFY_USER_IDS" in os.environ else [])
+
+        self.chat_ids = list(
+            map(int, os.environ['CHAT_IDS'].split(','))
+            if "CHAT_IDS" in os.environ else [])
 
         self.message_ban_patterns = os.environ['MESSAGE_BAN_PATTERNS']
         self.message_ban_re = (re.compile(
@@ -51,14 +51,12 @@ class TelegramMonitorBot:
             re.IGNORECASE | re.VERBOSE)
             if self.name_ban_patterns else None)
 
-        self.ban_feedback_message = "You have been banned from this group for posting prohibited content."
-        self.ban_name_feedback_message = "You have been banned from this group for having a misleading username."
-        self.hide_feedback_message = "Your last message was deleted for having prohibited content."
 
     @MWT(timeout=60*60)
     def get_admin_ids(self, bot, chat_id):
-        """Returns a list of admin IDs for a given chat. Results are cached for 1 hour."""
+        """ Returns a list of admin IDs for a given chat. Results are cached for 1 hour. """
         return [admin.user.id for admin in bot.get_chat_administrators(chat_id)]
+
 
     def ban_user(self, update):
         """ Ban user """
@@ -91,10 +89,6 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
-            # Send the user feedback
-            bot.send_message(
-                chat_id=update.message.from_user.id,
-                text=self.ban_name_feedback_message)
 
         if self.name_ban_re and self.name_ban_re.search(update.message.from_user.username or ''):
             # Logging
@@ -116,10 +110,6 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
-            # Send the user feedback
-            bot.send_message(
-                chat_id=update.message.from_user.id,
-                text=self.ban_name_feedback_message)
 
 
     def security_check_message(self, bot, update):
@@ -152,10 +142,6 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
-            # Send the user feedback
-            bot.send_message(
-                chat_id=update.message.from_user.id,
-                text=self.ban_feedback_message)
 
         elif self.message_hide_re and self.message_hide_re.search(message):
             # Logging
@@ -177,19 +163,20 @@ class TelegramMonitorBot:
             s.add(messageHide)
             s.commit()
             s.close()
-            # Send the user feedback
-            bot.send_message(
-                chat_id=update.message.from_user.id,
-                text=self.hide_feedback_message)
 
 
     def logger(self, bot, update):
-        """Primary Logger. Handles incoming bot messages and saves them to DB"""
+        """ Primary Logger. Handles incoming bot messages and saves them to DB """
         try:
             user = update.message.from_user
 
-            # TODO: Limit bot to certain chats
-            # print ("Chat id: {}".format(update.effective_chat.id))
+            # Limit bot to monitoring certain chats
+            if update.message.chat_id not in self.chat_ids:
+                print("Message from user {} is from chat_id not being monitored: {}".format(
+                    user.id,
+                    update.message.chat_id)
+                )
+                return
 
             if self.id_exists(user.id):
                 self.log_message(user.id, update.message.text)
@@ -214,7 +201,8 @@ class TelegramMonitorBot:
                     update.message.text.encode('utf-8'))
                 )
 
-            if update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id):
+            if (self.debug or
+                update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id)):
                 # Security checks
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
@@ -266,13 +254,13 @@ class TelegramMonitorBot:
 
 
     def error(self, bot, update, error):
-        """Log Errors caused by Updates."""
+        """ Log Errors caused by Updates. """
         print("Update '{}' caused error '{}'".format(update, error),
             file=sys.stderr)
 
 
     def start(self):
-        """Start the bot."""
+        """ Start the bot. """
 
         # Create the EventHandler and pass it your bot's token.
         updater = Updater(os.environ["TELEGRAM_BOT_TOKEN"])
@@ -298,7 +286,7 @@ class TelegramMonitorBot:
         # Start the Bot
         updater.start_polling()
 
-        print("Bot started")
+        print("Bot started. Montitoring chats: {}".format(self.chat_ids))
 
         # Run the bot until you press Ctrl-C or the process receives SIGINT,
         # SIGTERM or SIGABRT. This should be used most of the time, since
