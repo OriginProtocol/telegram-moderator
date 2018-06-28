@@ -24,7 +24,7 @@ class TelegramMonitorBot:
 
     def __init__(self):
         self.debug = (
-            (os.environ.get('DEBUG') is not None) &&
+            (os.environ.get('DEBUG') is not None) and
             (os.environ.get('DEBUG').upper() != "false"))
 
         # Channel to notify of violoations, e.g. '@channelname'
