@@ -79,8 +79,6 @@ class TelegramMonitorBot:
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text="🤖:" + log_message)
             # Ban the user
             self.ban_user(update)
             # Log in database
@@ -91,6 +89,8 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
         if self.name_ban_re and self.name_ban_re.search(update.message.from_user.username or ''):
             # Logging
@@ -98,8 +98,6 @@ class TelegramMonitorBot:
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
             # Ban the user
             self.ban_user(update)
             # Log in database
@@ -110,6 +108,8 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
 
     def security_check_message(self, bot, update):
@@ -126,8 +126,6 @@ class TelegramMonitorBot:
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
             # Any message that causes a ban gets deleted
             update.message.delete()
             # Ban the user
@@ -140,6 +138,8 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
         elif self.message_hide_re and self.message_hide_re.search(message):
             # Logging
@@ -147,8 +147,6 @@ class TelegramMonitorBot:
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
             # Delete the message
             update.message.delete()
             # Log in database
@@ -159,6 +157,8 @@ class TelegramMonitorBot:
             s.add(messageHide)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
 
     def logger(self, bot, update):
