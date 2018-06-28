@@ -23,7 +23,9 @@ class TelegramMonitorBot:
 
 
     def __init__(self):
-        self.debug = os.environ.get('DEBUG') is not None
+        self.debug = (
+            (os.environ.get('DEBUG') is not None) &&
+            (os.environ.get('DEBUG').upper() != "false"))
 
         # Channel to notify of violoations, e.g. '@channelname'
         self.notify_chat = os.environ['NOTIFY_CHAT']
@@ -78,7 +80,7 @@ class TelegramMonitorBot:
                 update.message.reply_text(log_message)
             print(log_message)
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            bot.sendMessage(chat_id=self.notify_chat, text="🤖:" + log_message)
             # Ban the user
             self.ban_user(update)
             # Log in database
