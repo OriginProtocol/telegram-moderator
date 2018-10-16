@@ -1,6 +1,9 @@
 # Never commit config data
 config.cnf
 
+# Env vars for "real" installation
+env.sh
+
 # Byte-compiled / optimized / DLL files
 *.py[cod]
 

@@ -27,8 +27,17 @@ class TelegramMonitorBot:
             (os.environ.get('DEBUG') is not None) and
             (os.environ.get('DEBUG').upper() != "false"))
 
+        if (self.debug):
+            print("🔵 DEBUG:", os.environ["DEBUG"])
+            print("🔵 TELEGRAM_BOT_POSTGRES_URL:", os.environ["TELEGRAM_BOT_POSTGRES_URL"])
+            print("🔵 TELEGRAM_BOT_TOKEN:", os.environ["TELEGRAM_BOT_TOKEN"])
+            print("🔵 NOTIFY_CHAT:", os.environ['NOTIFY_CHAT'] if 'NOTIFY_CHAT' in os.environ else "<undefined>")
+            print("🔵 MESSAGE_BAN_PATTERNS:\n", os.environ['MESSAGE_BAN_PATTERNS'])
+            print("🔵 MESSAGE_HIDE_PATTERNS:\n", os.environ['MESSAGE_HIDE_PATTERNS'])
+            print("🔵 NAME_BAN_PATTERNS:\n", os.environ['NAME_BAN_PATTERNS'])
+
         # Channel to notify of violoations, e.g. '@channelname'
-        self.notify_chat = os.environ['NOTIFY_CHAT']
+        self.notify_chat = os.environ['NOTIFY_CHAT'] if 'NOTIFY_CHAT' in os.environ else None
 
         # List of chat ids that bot should monitor
         self.chat_ids = (
@@ -119,6 +128,26 @@ class TelegramMonitorBot:
         message = unidecode.unidecode(update.message.text)
         # TODO: Replace lookalike unicode characters:
         # https://github.com/wanderingstan/Confusables
+
+        # Hide forwarded messages
+        if update.message.forward_date is not None:
+            # Logging
+            log_message = "❌ HIDE FORWARDED: {}".format(update.message.text.encode('utf-8'))
+            if self.debug:
+                update.message.reply_text(log_message)
+            print(log_message)
+            # Delete the message
+            update.message.delete()
+            # Log in database
+            s = session()
+            messageHide = MessageHide(
+                user_id=update.message.from_user.id,
+                message=update.message.text)
+            s.add(messageHide)
+            s.commit()
+            s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
         if self.message_ban_re and self.message_ban_re.search(message):
             # Logging
