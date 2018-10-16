@@ -23,12 +23,21 @@ class TelegramMonitorBot:
 
 
     def __init__(self):
-        self.debug = os.environ.get('DEBUG') is not None
+        self.debug = (
+            (os.environ.get('DEBUG') is not None) and
+            (os.environ.get('DEBUG').upper() != "false"))
 
-        # Users to notify of violoations
-        self.notify_user_ids = (
-            list(map(int, os.environ['NOTIFY_USER_IDS'].split(',')))
-            if "NOTIFY_USER_IDS" in os.environ else [])
+        if (self.debug):
+            print("🔵 DEBUG:", os.environ["DEBUG"])
+            print("🔵 TELEGRAM_BOT_POSTGRES_URL:", os.environ["TELEGRAM_BOT_POSTGRES_URL"])
+            print("🔵 TELEGRAM_BOT_TOKEN:", os.environ["TELEGRAM_BOT_TOKEN"])
+            print("🔵 NOTIFY_CHAT:", os.environ['NOTIFY_CHAT'] if 'NOTIFY_CHAT' in os.environ else "<undefined>")
+            print("🔵 MESSAGE_BAN_PATTERNS:\n", os.environ['MESSAGE_BAN_PATTERNS'])
+            print("🔵 MESSAGE_HIDE_PATTERNS:\n", os.environ['MESSAGE_HIDE_PATTERNS'])
+            print("🔵 NAME_BAN_PATTERNS:\n", os.environ['NAME_BAN_PATTERNS'])
+
+        # Channel to notify of violoations, e.g. '@channelname'
+        self.notify_chat = os.environ['NOTIFY_CHAT'] if 'NOTIFY_CHAT' in os.environ else None
 
         # List of chat ids that bot should monitor
         self.chat_ids = (
@@ -75,15 +84,10 @@ class TelegramMonitorBot:
             + update.message.from_user.last_name)
         if self.name_ban_re and self.name_ban_re.search(full_name):
             # Logging
-            log_message = "Ban match full name: {}".format(full_name.encode('utf-8'))
+            log_message = "❌ 🙅‍♂️ BAN MATCH FULL NAME: {}".format(full_name.encode('utf-8'))
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            for notify_user_id in self.notify_user_ids:
-                print (notify_user_id,"gets notified")
-                bot.send_message(
-                    chat_id=notify_user_id,
-                    text=log_message)
             # Ban the user
             self.ban_user(update)
             # Log in database
@@ -94,17 +98,15 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
         if self.name_ban_re and self.name_ban_re.search(update.message.from_user.username or ''):
             # Logging
-            log_message = "Ban match username: {}".format(update.message.from_user.username.encode('utf-8'))
+            log_message = "❌ 🙅‍♂️ BAN MATCH USERNAME: {}".format(update.message.from_user.username.encode('utf-8'))
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            for notify_user_id in self.notify_user_ids:
-                bot.send_message(
-                    chat_id=notify_user_id,
-                    text=log_message)
             # Ban the user
             self.ban_user(update)
             # Log in database
@@ -115,6 +117,8 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
 
     def security_check_message(self, bot, update):
@@ -125,16 +129,32 @@ class TelegramMonitorBot:
         # TODO: Replace lookalike unicode characters:
         # https://github.com/wanderingstan/Confusables
 
-        if self.message_ban_re and self.message_ban_re.search(message):
+        # Hide forwarded messages
+        if update.message.forward_date is not None:
             # Logging
-            log_message = "Ban message match: {}".format(update.message.text.encode('utf-8'))
+            log_message = "❌ HIDE FORWARDED: {}".format(update.message.text.encode('utf-8'))
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            for notify_user_id in self.notify_user_ids:
-                bot.send_message(
-                    chat_id=notify_user_id,
-                    text=log_message)
+            # Delete the message
+            update.message.delete()
+            # Log in database
+            s = session()
+            messageHide = MessageHide(
+                user_id=update.message.from_user.id,
+                message=update.message.text)
+            s.add(messageHide)
+            s.commit()
+            s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+
+        if self.message_ban_re and self.message_ban_re.search(message):
+            # Logging
+            log_message = "❌ 🙅‍♂️ BAN MATCH: {}".format(update.message.text.encode('utf-8'))
+            if self.debug:
+                update.message.reply_text(log_message)
+            print(log_message)
             # Any message that causes a ban gets deleted
             update.message.delete()
             # Ban the user
@@ -147,17 +167,15 @@ class TelegramMonitorBot:
             s.add(userBan)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
         elif self.message_hide_re and self.message_hide_re.search(message):
             # Logging
-            log_message = "Hide match: {}".format(update.message.text.encode('utf-8'))
+            log_message = "❌ 🙈 HIDE MATCH: {}".format(update.message.text.encode('utf-8'))
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
-            for notify_user_id in self.notify_user_ids:
-                bot.send_message(
-                    chat_id=notify_user_id,
-                    text=log_message)
             # Delete the message
             update.message.delete()
             # Log in database
@@ -168,6 +186,8 @@ class TelegramMonitorBot:
             s.add(messageHide)
             s.commit()
             s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
 
     def logger(self, bot, update):
@@ -206,13 +226,13 @@ class TelegramMonitorBot:
                     update.message.text.encode('utf-8'))
                 )
 
-            if (self.debug or
+            if (True or
                 update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id)):
                 # Security checks
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
             else:
-                print("Skipping checks. User is admin: {}".format(user.id))
+                print("👮‍♂️ Skipping checks. User is admin: {}".format(user.id))
 
         except Exception as e:
             print("Error: {}".format(e))

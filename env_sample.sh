@@ -1,6 +1,7 @@
 # Example env vars for bot
+# Copy this to `env.sh` and edit with your real vars -- it is ignored by git
 
-export TELEGRAM_BOT_POSTGRES_URL="postgresql://postgres:postgres@localhost/origindb"
+export TELEGRAM_BOT_POSTGRES_URL="postgresql://localhost/postgres"
 
 read -r -d '' MESSAGE_BAN_PATTERNS << 'EOF'
 # ETH
@@ -25,3 +26,7 @@ export TELEGRAM_BOT_TOKEN="XXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 export NAME_BAN_PATTERNS="admin$"
 
 export CHAT_IDS="-250531994"
+
+# Needed to make these env vars visible to python
+export MESSAGE_BAN_PATTERNS=$MESSAGE_BAN_PATTERNS
+export MESSAGE_HIDE_PATTERNS=$MESSAGE_HIDE_PATTERNS
