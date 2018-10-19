@@ -55,6 +55,12 @@ read -r -d '' MESSAGE_BAN_PATTERNS << 'EOF'
 |[0-9a-fA-Z]{34,34}
 EOF
 ```
+## Other ENV vars
+
+- `CHAT_IDS` : **REQUIRED**. Comma-seperated list of IDs of chat(s) that should be monitored. To find out the ID of a chat, add the bot to a chat and type some messages there. The bot log will report an error that it got messages `from chat_id not being monitored: XXX` where XXX is the chat ID. E.g. `-240532994,-150531679`
+- `DEBUG` : If set to anything except `false`, will put bot into debug mode. This means that all actions will be logged into the chat itself. 
+- `ADMIN_EXEMPT` : If set to anything except `false`, admin users will be exempt from monitoring? Reccomended to be set, but useful to turn off for debugging. 
+- `NOTIFY_CHAT` : ID of chat to report actions. Can be useful if you have an admin-only chat where you want to monitor the bot's activity. E.g. `-140532994`
 
 ## Running
 
