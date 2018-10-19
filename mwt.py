@@ -1,7 +1,7 @@
 import time
 
 class MWT(object):
-    """Memoize With Timeout"""
+    """Memorize With Timeout"""
     _caches = {}
     _timeouts = {}
 
@@ -26,11 +26,11 @@ class MWT(object):
             key = (args, tuple(kw))
             try:
                 v = self.cache[key]
-                print("cache")
+                # print("cache")
                 if (time.time() - v[1]) > self.timeout:
                     raise KeyError
             except KeyError:
-                print("new")
+                # print("new")
                 v = self.cache[key] = f(*args,**kwargs),time.time()
             return v[0]
         func.func_name = f.__name__

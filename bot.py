@@ -27,8 +27,14 @@ class TelegramMonitorBot:
             (os.environ.get('DEBUG') is not None) and
             (os.environ.get('DEBUG').upper() != "false"))
 
+        # Are admins exempt from having messages checked?
+        self.admin_exempt = (
+            (os.environ.get('ADMIN_EXEMPT') is not None) and
+            (os.environ.get('ADMIN_EXEMPT').upper() != "false"))
+
         if (self.debug):
-            print("🔵 DEBUG:", os.environ["DEBUG"])
+            print("🔵 debug:", self.debug)
+            print("🔵 admin_exempt:", self.admin_exempt)
             print("🔵 TELEGRAM_BOT_POSTGRES_URL:", os.environ["TELEGRAM_BOT_POSTGRES_URL"])
             print("🔵 TELEGRAM_BOT_TOKEN:", os.environ["TELEGRAM_BOT_TOKEN"])
             print("🔵 NOTIFY_CHAT:", os.environ['NOTIFY_CHAT'] if 'NOTIFY_CHAT' in os.environ else "<undefined>")
@@ -124,6 +130,9 @@ class TelegramMonitorBot:
     def security_check_message(self, bot, update):
         """ Test message for security violations """
 
+        if not update.message.text:
+            return
+
         # Remove accents from letters (é->e, ñ->n, etc...)
         message = unidecode.unidecode(update.message.text)
         # TODO: Replace lookalike unicode characters:
@@ -196,9 +205,11 @@ class TelegramMonitorBot:
             update.message.document or
             update.message.game or
             update.message.voice):
-            print("Non message handling")
             # Logging
-            log_message = "❌ HIDE ATTACHMENT"
+            if update.message.document:
+                log_message = "❌ HIDE DOCUMENT: {}".format(update.message.document.__dict__)
+            else:
+                log_message = "❌ HIDE NON-DOCUMENT ATTACHMENT"
             if self.debug:
                 update.message.reply_text(log_message)
             print(log_message)
@@ -258,14 +269,15 @@ class TelegramMonitorBot:
                     (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'))
                 )
 
-            if (self.debug or
-                (update.message.text and update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id))):
+            # Don't check admin activity
+            is_admin = update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id)
+            if is_admin and self.admin_exempt:
+                print("👮‍♂️ Skipping checks. User is admin: {}".format(user.id))
+            else:
                 # Security checks
                 self.attachment_check(bot, update)
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
-            else:
-                print("👮‍♂️ Skipping checks. User is admin: {}".format(user.id))
 
         except Exception as e:
             print("Error: {}".format(e))
