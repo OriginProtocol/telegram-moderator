@@ -86,8 +86,9 @@ class TelegramMonitorBot:
     def security_check_username(self, bot, update):
         """ Test username for security violations """
 
-        full_name = (update.message.from_user.first_name + " "
-            + update.message.from_user.last_name)
+        full_name = "{} {}".format(
+            update.message.from_user.first_name,
+            update.message.from_user.last_name)
         if self.name_ban_re and self.name_ban_re.search(full_name):
             # Logging
             log_message = "❌ 🙅‍♂️ BAN MATCH FULL NAME: {}".format(full_name.encode('utf-8'))
@@ -255,18 +256,22 @@ class TelegramMonitorBot:
                 else:
                     print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
 
+            user_name = (
+                user.username or
+                "{} {}".format(user.first_name, user.last_name) or
+                "<none>").encode('utf-8')
             if update.message.text:
                 print("{} {} ({}) : {}".format(
                     strftime("%Y-%m-%dT%H:%M:%S"),
                     user.id,
-                    (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'),
+                    user_name,
                     update.message.text.encode('utf-8'))
                 )
             else:
                 print("{} {} ({}) : non-message".format(
                     strftime("%Y-%m-%dT%H:%M:%S"),
                     user.id,
-                    (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'))
+                    user_name)
                 )
 
             # Don't check admin activity
