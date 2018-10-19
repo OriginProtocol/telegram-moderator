@@ -45,7 +45,7 @@ Head to https://www.originprotocol.com/developers to learn more about what we're
 - `TELEGRAM_BOT_TOKEN` : **REQUIRED**. Token for bot to control. e.g. `4813829027:ADJFKAf0plousH2EZ2jBfxxRWFld3oK34ya`
 - `TELEGRAM_BOT_POSTGRES_URL` : **REQUIRED**. URI for postgres instance to log activity to. e.g. `postgresql://localhost/postgres`
 - `DEBUG` : If set to anything except `false`, will put bot into debug mode. This means that all actions will be logged into the chat itself, and more things will be logged. 
-- `ADMIN_EXEMPT` : If set to anything except `false`, admin users will be exempt from monitoring? Reccomended to be set, but useful to turn off for debugging. 
+- `ADMIN_EXEMPT` : If set to anything except `false`, admin users will be exempt from monitoring. Reccomended to be set, but useful to turn off for debugging. 
 - `NOTIFY_CHAT` : ID of chat to report actions. Can be useful if you have an admin-only chat where you want to monitor the bot's activity. E.g. `-140532994`
 
 Sample bash file to set `MESSAGE_BAN_PATTERNS`:
