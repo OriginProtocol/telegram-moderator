@@ -190,6 +190,32 @@ class TelegramMonitorBot:
             bot.sendMessage(chat_id=self.notify_chat, text=log_message)
 
 
+    def attachment_check(self, bot, update):
+        """ Hide messages with attachments (except photo or video) """
+        if (update.message.audio or
+            update.message.document or
+            update.message.game or
+            update.message.voice):
+            print("Non message handling")
+            # Logging
+            log_message = "❌ HIDE ATTACHMENT"
+            if self.debug:
+                update.message.reply_text(log_message)
+            print(log_message)
+            # Delete the message
+            update.message.delete()
+            # Log in database
+            s = session()
+            messageHide = MessageHide(
+                user_id=update.message.from_user.id,
+                message=update.message.text)
+            s.add(messageHide)
+            s.commit()
+            s.close()
+            # Notify channel
+            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+
+
     def logger(self, bot, update):
         """ Primary Logger. Handles incoming bot messages and saves them to DB """
         try:
@@ -225,10 +251,17 @@ class TelegramMonitorBot:
                     (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'),
                     update.message.text.encode('utf-8'))
                 )
+            else:
+                print("{} {} ({}) : non-message".format(
+                    strftime("%Y-%m-%dT%H:%M:%S"),
+                    user.id,
+                    (user.username or (user.first_name + " " + user.last_name) or "").encode('utf-8'))
+                )
 
-            if (True or
-                update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id)):
+            if (self.debug or
+                (update.message.text and update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id))):
                 # Security checks
+                self.attachment_check(bot, update)
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
             else:
@@ -236,7 +269,7 @@ class TelegramMonitorBot:
 
         except Exception as e:
             print("Error: {}".format(e))
-
+            print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
 
     # DB queries
     def id_exists(self, id_value):
@@ -297,7 +330,7 @@ class TelegramMonitorBot:
 
         # on noncommand i.e message - echo the message on Telegram
         dp.add_handler(MessageHandler(
-            Filters.text,
+            Filters.all,
             lambda bot, update : self.logger(bot, update)
         ))
 
