@@ -275,7 +275,7 @@ class TelegramMonitorBot:
                 )
 
             # Don't check admin activity
-            is_admin = update.message.from_user.id not in self.get_admin_ids(bot, update.message.chat_id)
+            is_admin = update.message.from_user.id in self.get_admin_ids(bot, update.message.chat_id)
             if is_admin and self.admin_exempt:
                 print("👮‍♂️ Skipping checks. User is admin: {}".format(user.id))
             else:
