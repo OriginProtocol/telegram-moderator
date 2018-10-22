@@ -36,13 +36,17 @@ Head to https://www.originprotocol.com/developers to learn more about what we're
  - Add your bot to the group like so: https://stackoverflow.com/questions/37338101/how-to-add-a-bot-to-a-telegram-group
  - Make your bot an admin in the group
 
-## Configuring patterns
+## Configuration with ENV vars
 
-- Regex patterns will be read from the following env variables
-	- `MESSAGE_BAN_PATTERNS` Messages matching this will ban the user.
-	- `MESSAGE_HIDE_PATTERNS` Messages matching this will be hidden/deleted
-	- `NAME_BAN_PATTERNS` Users with usernames or first/last names maching this will be banned from the group.
-	- `SAFE_USER_IDS` User ID's that are except from these checkes. Note that the bot cannot ban admin users, but can delete their messages.
+- `MESSAGE_BAN_PATTERNS` : **REQUIRED** Regex pattern. Messages matching this will ban the user.
+- `MESSAGE_HIDE_PATTERNS` : **REQUIRED** Regex pattern. Messages matching this will be hidden/deleted
+- `NAME_BAN_PATTERNS` **REQUIRED** Regex pattern. Users with usernames or first/last names maching this will be banned from the group.
+- `CHAT_IDS` : **REQUIRED**. Comma-seperated list of IDs of chat(s) that should be monitored. To find out the ID of a chat, add the bot to a chat and type some messages there. The bot log will report an error that it got messages `from chat_id not being monitored: XXX` where XXX is the chat ID. e.g. `-240532994,-150531679`
+- `TELEGRAM_BOT_TOKEN` : **REQUIRED**. Token for bot to control. e.g. `4813829027:ADJFKAf0plousH2EZ2jBfxxRWFld3oK34ya`
+- `TELEGRAM_BOT_POSTGRES_URL` : **REQUIRED**. URI for postgres instance to log activity to. e.g. `postgresql://localhost/postgres`
+- `DEBUG` : If set to anything except `false`, will put bot into debug mode. This means that all actions will be logged into the chat itself, and more things will be logged. 
+- `ADMIN_EXEMPT` : If set to anything except `false`, admin users will be exempt from monitoring. Reccomended to be set, but useful to turn off for debugging. 
+- `NOTIFY_CHAT` : ID of chat to report actions. Can be useful if you have an admin-only chat where you want to monitor the bot's activity. E.g. `-140532994`
 
 Sample bash file to set `MESSAGE_BAN_PATTERNS`:
 ```
@@ -55,6 +59,10 @@ read -r -d '' MESSAGE_BAN_PATTERNS << 'EOF'
 |[0-9a-fA-Z]{34,34}
 EOF
 ```
+
+## Attachements
+
+By default, any attachments other than images or animations will cause the message to be hidden. 
 
 ## Running
 
