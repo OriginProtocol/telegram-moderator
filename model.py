@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
+from sqlalchemy import Column, DateTime, BigInteger, String, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 import os
@@ -27,6 +27,7 @@ class Message(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('telegram_users.id'), nullable=False)
     message = Column(String)
+    chat_id = Column(BigInteger)
     time = Column(DateTime, default=func.now())
 
 

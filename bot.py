@@ -242,7 +242,8 @@ class TelegramMonitorBot:
                 return
 
             if self.id_exists(user.id):
-                self.log_message(user.id, update.message.text)
+                self.log_message(user.id, update.message.text,
+                                 update.message.chat_id)
             else:
                 add_user_success = self.add_user(
                     user.id,
@@ -251,7 +252,8 @@ class TelegramMonitorBot:
                     user.username)
 
                 if add_user_success:
-                    self.log_message(user.id, update.message.text)
+                    self.log_message(
+                        user.id, update.message.text, update.message.chat_id)
                     print("User added: {}".format(user.id))
                 else:
                     print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
@@ -301,10 +303,10 @@ class TelegramMonitorBot:
         return bool_set
 
 
-    def log_message(self, user_id, user_message):
+    def log_message(self, user_id, user_message, chat_id):
         try:
             s = session()
-            msg1 = Message(user_id=user_id, message=user_message)
+            msg1 = Message(user_id=user_id, message=user_message, chat_id=chat_id)
             s.add(msg1)
             s.commit()
             s.close()
