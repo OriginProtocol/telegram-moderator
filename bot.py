@@ -27,12 +27,12 @@ class TelegramMonitorBot:
     def __init__(self):
         self.debug = (
             (os.environ.get('DEBUG') is not None) and
-            (os.environ.get('DEBUG').upper() != "false"))
+            (os.environ.get('DEBUG').lower() != "false"))
 
         # Are admins exempt from having messages checked?
         self.admin_exempt = (
             (os.environ.get('ADMIN_EXEMPT') is not None) and
-            (os.environ.get('ADMIN_EXEMPT').upper() != "false"))
+            (os.environ.get('ADMIN_EXEMPT').lower() != "false"))
 
         if (self.debug):
             print("🔵 debug:", self.debug)
