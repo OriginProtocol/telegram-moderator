@@ -9,6 +9,7 @@ Head to https://www.originprotocol.com/developers to learn more about what we're
 - Bans users with usernames matching specified patterns
 - Records logs of converstations
 - Logs an English translation of any foreign languages using Google Translate
+- Uses textblob for basic sentiment analysis of both polarity and subjectivity
 
 ## Installation
 
@@ -53,6 +54,20 @@ export TELEGRAM_BOT_TOKEN="4813829027:ADJFKAf0plousH2EZ2jBfxxRWFld3oK34ya"
 - `ADMIN_EXEMPT` : If set to anything except `false`, admin users will be exempt from monitoring. Reccomended to be set, but useful to turn off for debugging.
 - `NOTIFY_CHAT` : ID of chat to report actions. Can be useful if you have an admin-only chat where you want to monitor the bot's activity. E.g. `-140532994`
 
+## Download the corpus for Textblob
+
+For sentiment analysis to work, you'll need to download the latest corpus file for textblob. You can do this by running:
+
+```
+python -m textblob.download_corpora
+```
+
+If you're running the bot on Heroku, set an environment variable named `NLTK_DATA` to `/app/nltk_data` by running:
+
+```
+heroku config:set NLTK_DATA='/app/nltk_data'
+```
+
 Sample bash file to set `MESSAGE_BAN_PATTERNS`:
 
 ```
@@ -66,7 +81,7 @@ read -r -d '' MESSAGE_BAN_PATTERNS << 'EOF'
 EOF
 ```
 
-## Attachements
+## Attachments
 
 By default, any attachments other than images or animations will cause the message to be hidden.
 
