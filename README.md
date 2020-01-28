@@ -68,6 +68,8 @@ If you're running the bot on Heroku, set an environment variable named `NLTK_DAT
 heroku config:set NLTK_DATA='/app/nltk_data'
 ```
 
+## Message ban patterns
+
 Sample bash file to set `MESSAGE_BAN_PATTERNS`:
 
 ```
