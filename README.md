@@ -5,9 +5,9 @@ Head to https://www.originprotocol.com/developers to learn more about what we're
 # Telegram Bot
 
 - Deletes messages matching specified patterns
-- Bans users for posting messagses matching specified patterns
+- Bans users for posting messages matching specified patterns
 - Bans users with usernames matching specified patterns
-- Records logs of converstations
+- Records logs of conversations
 - Logs an English translation of any foreign languages using Google Translate
 - Uses textblob for basic sentiment analysis of both polarity and subjectivity
 
