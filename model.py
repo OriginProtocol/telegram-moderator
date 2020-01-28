@@ -27,6 +27,8 @@ class Message(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('telegram_users.id'), nullable=False)
     message = Column(String)
+    language_code = Column(String)
+    english_message = Column(String)
     chat_id = Column(BigInteger)
     time = Column(DateTime, default=func.now())
 

@@ -18,6 +18,7 @@ from time import strftime
 import re
 import unidecode
 from mwt import MWT
+from googletrans import Translator
 
 class TelegramMonitorBot:
 
@@ -306,7 +307,16 @@ class TelegramMonitorBot:
     def log_message(self, user_id, user_message, chat_id):
         try:
             s = session()
-            msg1 = Message(user_id=user_id, message=user_message, chat_id=chat_id)
+            language_code = english_message = ""
+            try:
+                translator = Translator()
+                translated = translator.translate(user_message)
+                language_code = translated.src
+                english_message = translated.text
+            except Exception as e:
+                print(e.message)
+            msg1 = Message(user_id=user_id, message=user_message,
+                           chat_id=chat_id, language_code=language_code, english_message=english_message)
             s.add(msg1)
             s.commit()
             s.close()
