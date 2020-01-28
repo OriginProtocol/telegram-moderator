@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [ -f bin/install_textblob_corpora ]; then
+    echo "-----> Running install_textblob_corpora"
+    chmod +x bin/install_textblob_corpora
+    bin/install_textblob_corpora
+fi
+
+echo "-----> Post-compile done"

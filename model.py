@@ -30,8 +30,9 @@ class Message(Base):
     language_code = Column(String)
     english_message = Column(String)
     chat_id = Column(BigInteger)
+    polarity = Column(Numeric)
+    subjectivity = Column(Numeric)
     time = Column(DateTime, default=func.now())
-
 
 class MessageHide(Base):
     __tablename__ = 'telegram_message_hides'

@@ -4,3 +4,4 @@ SQLAlchemy==1.2.2
 configparser==3.5.0
 Unidecode==1.0.22
 googletrans==2.4.0
+textblob
