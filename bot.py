@@ -19,6 +19,7 @@ import re
 import unidecode
 from mwt import MWT
 from googletrans import Translator
+from textblob import TextBlob
 
 class TelegramMonitorBot:
 
@@ -303,20 +304,26 @@ class TelegramMonitorBot:
 
         return bool_set
 
-
     def log_message(self, user_id, user_message, chat_id):
         try:
             s = session()
             language_code = english_message = ""
+            polarity = subjectivity = 0.0
             try:
+                # translate to English & log the original language
                 translator = Translator()
                 translated = translator.translate(user_message)
                 language_code = translated.src
                 english_message = translated.text
+                # run basic sentiment analysis on the translated English string
+                analysis = TextBlob(english_message)
+                polarity = analysis.sentiment.polarity
+                subjectivity = analysis.sentiment.subjectivity
             except Exception as e:
                 print(e.message)
-            msg1 = Message(user_id=user_id, message=user_message,
-                           chat_id=chat_id, language_code=language_code, english_message=english_message)
+            msg1 = Message(user_id=user_id, message=user_message, chat_id=chat_id, 
+                language_code=language_code, english_message=english_message, polarity=polarity,
+                subjectivity=subjectivity)
             s.add(msg1)
             s.commit()
             s.close()
