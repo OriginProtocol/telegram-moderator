@@ -283,6 +283,7 @@ class TelegramMonitorBot:
                 print("👮‍♂️ Skipping checks. User is admin: {}".format(user.id))
             else:
                 # Security checks
+                print(json.dumps(update))
                 self.attachment_check(bot, update)
                 self.security_check_username(bot, update)
                 self.security_check_message(bot, update)
