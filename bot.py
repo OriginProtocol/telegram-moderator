@@ -16,6 +16,7 @@ import os
 from model import User, Message, MessageHide, UserBan, session
 from time import strftime
 import re
+import json
 import unidecode
 from mwt import MWT
 from googletrans import Translator
