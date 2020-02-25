@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, BigInteger, String, Integer, ForeignKey, func
+from sqlalchemy import Column, DateTime, BigInteger, String, Integer, Numeric, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 import os
@@ -30,8 +30,9 @@ class Message(Base):
     language_code = Column(String)
     english_message = Column(String)
     chat_id = Column(BigInteger)
+    polarity = Column(Numeric)
+    subjectivity = Column(Numeric)
     time = Column(DateTime, default=func.now())
-
 
 class MessageHide(Base):
     __tablename__ = 'telegram_message_hides'
