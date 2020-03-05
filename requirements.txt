@@ -1,6 +1,6 @@
-psycopg2==2.7.3.2
+psycopg2==2.8.4
 python-telegram-bot==9.0.0
-SQLAlchemy==1.2.2
+SQLAlchemy==1.3.13
 configparser==3.5.0
 Unidecode==1.0.22
 googletrans==2.4.0
