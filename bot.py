@@ -73,6 +73,11 @@ class TelegramMonitorBot:
             re.IGNORECASE | re.VERBOSE)
             if self.name_ban_patterns else None)
 
+        # Mime type document check
+        # NOTE: All gifs appear to be converted to video/mp4
+        mime_types = os.environ.get('ALLOWED_MIME_TYPES', 'video/mp4')
+        self.allowed_mime_types = set(map(lambda s: s.strip(), mime_types.split(',')))
+
 
     @MWT(timeout=60*60)
     def get_admin_ids(self, bot, chat_id):
@@ -210,6 +215,10 @@ class TelegramMonitorBot:
             update.message.voice):
             # Logging
             if update.message.document:
+                # GIFs are documents and allowed
+                mime_type = update.message.document.mime_type
+                if mime_type and mime_type in self.allowed_mime_types:
+                    return
                 log_message = "❌ HIDE DOCUMENT: {}".format(update.message.document.__dict__)
             else:
                 log_message = "❌ HIDE NON-DOCUMENT ATTACHMENT"
@@ -289,7 +298,7 @@ class TelegramMonitorBot:
                 self.security_check_message(bot, update)
 
         except Exception as e:
-            print("Error: {}".format(e))
+            print("Error[292]: {}".format(e))
             print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
 
     # DB queries
@@ -305,6 +314,10 @@ class TelegramMonitorBot:
         return bool_set
 
     def log_message(self, user_id, user_message, chat_id):
+
+        if user_message is None:
+            user_message = "[NO MESSAGE]"
+
         try:
             s = session()
             language_code = english_message = ""
@@ -320,7 +333,7 @@ class TelegramMonitorBot:
                 polarity = analysis.sentiment.polarity
                 subjectivity = analysis.sentiment.subjectivity
             except Exception as e:
-                print(e.message)
+                print(str(e))
             msg1 = Message(user_id=user_id, message=user_message, chat_id=chat_id, 
                 language_code=language_code, english_message=english_message, polarity=polarity,
                 subjectivity=subjectivity)
@@ -328,7 +341,7 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
         except Exception as e:
-            print("Error: {}".format(e))
+            print("Error logging message: {}".format(e))
 
 
     def add_user(self, user_id, first_name, last_name, username):
@@ -344,7 +357,7 @@ class TelegramMonitorBot:
             s.close()
             return self.id_exists(user_id)
         except Exception as e:
-            print("Error: {}".format(e))
+            print("Error[347]: {}".format(e))
 
 
     def error(self, bot, update, error):
