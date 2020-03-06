@@ -9,17 +9,160 @@ This bot logs all messages sent in a Telegram Group to a database.
 
 """
 
-from __future__ import print_function
-import sys
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+#from __future__ import print_function
 import os
-from model import User, Message, MessageHide, UserBan, session
-from time import strftime
+import sys
 import re
 import unidecode
+import locale
+from time import strftime
+from datetime import datetime, timedelta
+
+import requests
+import telegram
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from model import User, Message, MessageHide, UserBan, session
 from mwt import MWT
 from googletrans import Translator
 from textblob import TextBlob
+
+# Used with monetary formatting
+locale.setlocale(locale.LC_ALL, '')
+
+# Price data cache duration
+CACHE_DURATION = timedelta(minutes=15)
+
+# CMC IDs can be retrived at:
+# https://pro-api.coinmarketcap.com/v1/cryptocurrency/map?symbol=[SYMBOL]
+CMC_SYMBOL_TO_ID = {
+    'OGN': 5117,
+    'USDT': 825,
+    'USDC': 3408,
+    'DAI': 4943,
+}
+CMC_API_KEY = os.environ.get('CMC_API_KEY')
+CMC_QUOTE_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id={}'
+
+
+def first_of(attr, match, it):
+    """ Return the first item in a set with an attribute that matches match """
+    if it is not None:
+        for i in it:
+            try:
+                if getattr(i, attr) == match:
+                    return i
+            except: pass
+
+    return None
+
+
+def command_from_message(message, default=None):
+    """ Extracts the first command from a Telegram Message """
+    if not message or not message.text:
+        return default
+
+    command = None
+    text = message.text
+    entities = message.entities
+    command_def = first_of('type', 'bot_command', entities)
+
+    if command_def:
+        command = text[command_def.offset:command_def.length]
+
+    return command or default
+
+
+def cmc_get_data(jso, cmc_id, pair_symbol='USD'):
+    """ Pull relevant data from a response object """
+    if not jso:
+        return None
+
+    data = jso.get('data', {})
+    specific_data = data.get(str(cmc_id), {})
+    quote = specific_data.get('quote', {})
+    symbol_data = quote.get(pair_symbol, {})
+    return {
+        'price': symbol_data.get('price'),
+        'volume': symbol_data.get('volume_24h'),
+        'percent_change': symbol_data.get('percent_change_24h'),
+        'market_cap': symbol_data.get('market_cap'),
+    }
+
+
+def monetary_format(v):
+    if not v:
+        v = 0
+    return locale.currency(float(v), grouping=True)
+
+
+class TokenData:
+    def __init__(self, symbol, price=None, stamp=datetime.now()):
+        self.symbol = symbol
+        self._price = price
+        self._percent_change = 0
+        self._volume = 0
+        self._market_cap = 0
+        if price is not None:
+            self.stamp = stamp
+        else:
+            self.stamp = None
+
+    def _fetch_from_cmc(self):
+        """ Get quote data for a specific known symbol """
+        jso = None
+
+        cmc_id = CMC_SYMBOL_TO_ID.get(self.symbol)
+        url = CMC_QUOTE_URL.format(cmc_id)
+        r = requests.get(url, headers={
+            'X-CMC_PRO_API_KEY': CMC_API_KEY,
+            'Accept': 'application/json',
+        })
+        if r.status_code != 200:
+            print('Failed to fetch price data for id: {}'.format(cmc_id))
+            return None
+        try:
+            jso = r.json()
+        except Exception:
+            print('Error parsing JSON')
+            return None
+        return jso
+
+    def update(self):
+        """ Fetch price from binance """
+        if self.stamp is None or (
+            self.stamp is not None
+            and self.stamp < datetime.now() - CACHE_DURATION
+        ):
+            # CMC
+            jso = self._fetch_from_cmc()
+            data = cmc_get_data(jso, CMC_SYMBOL_TO_ID[self.symbol])
+            if data is not None:
+                self._price = data.get('price')
+                self._percent_change = data.get('percent_change')
+                self._volume = data.get('volume')
+                self._market_cap = data.get('market_cap')
+                self.stamp = datetime.now()
+
+    @property
+    def price(self):
+        self.update()
+        return self._price
+
+    @property
+    def volume(self):
+        self.update()
+        return self._volume
+
+    @property
+    def percent_change(self):
+        self.update()
+        return self._percent_change
+
+    @property
+    def market_cap(self):
+        self.update()
+        return self._market_cap
+
 
 class TelegramMonitorBot:
 
@@ -77,6 +220,14 @@ class TelegramMonitorBot:
         # NOTE: All gifs appear to be converted to video/mp4
         mime_types = os.environ.get('ALLOWED_MIME_TYPES', 'video/mp4')
         self.allowed_mime_types = set(map(lambda s: s.strip(), mime_types.split(',')))
+
+        # Comamnds
+        self.available_commands = ['flip', 'unflip']
+        if CMC_API_KEY is not None:
+            self.available_commands.append('price')
+
+        # Cached token prices
+        self.cached_prices = {}
 
 
     @MWT(timeout=60*60)
@@ -359,6 +510,58 @@ class TelegramMonitorBot:
         except Exception as e:
             print("Error[347]: {}".format(e))
 
+    def handle_command(self, bot, update):
+        """ Handles commands
+
+        Note: Args reversed from docs?  Maybe version differences?  Docs say
+        cb(update, context) but we're getting cb(bot, update).
+
+        update: Update: https://python-telegram-bot.readthedocs.io/en/stable/telegram.update.html#telegram.Update
+        context: CallbackContext: https://python-telegram-bot.readthedocs.io/en/stable/telegram.ext.callbackcontext.html
+
+        hi: says hi
+        price: prints the OGN price
+        """
+        chat_id = None
+        command = None
+
+        command = command_from_message(update.effective_message)
+
+        if update.effective_message.chat:
+            chat_id = update.effective_message.chat.id
+
+        print('command: {} seen in chat_id {}'.format(command, chat_id))
+
+        if command == '/hi':
+            bot.send_message(chat_id, 'Yo whattup, @{}!'.format(update.effective_user.username))
+
+        elif command == '/flip':
+            bot.send_message(chat_id, '╯°□°）╯︵ ┻━┻')
+
+        elif command == '/unflip':
+            bot.send_message(chat_id, '┬──┬﻿ ¯\\_(՞▃՞ ¯\\_)')
+
+        elif command == '/price':
+            """ Price, 24 hour %, 24 hour volume, and market cap """
+            symbol = 'OGN'
+            if symbol not in self.cached_prices:
+                self.cached_prices[symbol] = TokenData(symbol)
+            pdata = self.cached_prices[symbol]
+            message = """
+*Origin Token* (OGN)
+*Price*: {} ({}%)
+*Market Cap*: {}
+*Volume(24h)*: {}
+
+@{}""".format(
+                monetary_format(pdata.price),
+                monetary_format(pdata.percent_change),
+                monetary_format(pdata.market_cap),
+                monetary_format(pdata.volume),
+                update.effective_user.username,
+            )
+            bot.send_message(chat_id, message, parse_mode=telegram.ParseMode.MARKDOWN)
+
 
     def error(self, bot, update, error):
         """ Log Errors caused by Updates. """
@@ -376,6 +579,15 @@ class TelegramMonitorBot:
         dp = updater.dispatcher
 
         # on different commands - answer in Telegram
+
+        # on commands
+        dp.add_handler(
+            CommandHandler(
+                command=self.available_commands,
+                callback=self.handle_command,
+                filters=Filters.all,
+            )
+        )
 
         # on noncommand i.e message - echo the message on Telegram
         dp.add_handler(MessageHandler(
