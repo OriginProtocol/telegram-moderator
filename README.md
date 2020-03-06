@@ -53,6 +53,7 @@ export TELEGRAM_BOT_TOKEN="4813829027:ADJFKAf0plousH2EZ2jBfxxRWFld3oK34ya"
 - `DEBUG` : If set to anything except `false`, will put bot into debug mode. This means that all actions will be logged into the chat itself, and more things will be logged.
 - `ADMIN_EXEMPT` : If set to anything except `false`, admin users will be exempt from monitoring. Reccomended to be set, but useful to turn off for debugging.
 - `NOTIFY_CHAT` : ID of chat to report actions. Can be useful if you have an admin-only chat where you want to monitor the bot's activity. E.g. `-140532994`
+- `CMC_API_KEY`: If you want the `/price` bot command to work, make sure to set a CoinMarketcap API key
 
 ## Download the corpus for Textblob
 
