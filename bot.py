@@ -156,7 +156,10 @@ class TokenData:
     @property
     def percent_change(self):
         self.update()
-        return self._percent_change
+        pc = str(self._percent_change)
+        if pc and not pc.startswith('-'):
+            pc = '+{}'.format(pc)
+        return pc
 
     @property
     def market_cap(self):
@@ -555,7 +558,7 @@ class TelegramMonitorBot:
 
 @{}""".format(
                 monetary_format(pdata.price),
-                monetary_format(pdata.percent_change),
+                pdata.percent_change,
                 monetary_format(pdata.market_cap),
                 monetary_format(pdata.volume),
                 update.effective_user.username,
