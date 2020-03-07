@@ -89,10 +89,11 @@ def cmc_get_data(jso, cmc_id, pair_symbol='USD'):
     }
 
 
-def monetary_format(v):
+def monetary_format(v, decimals=2):
     if not v:
         v = 0
-    return locale.currency(float(v), grouping=True)
+    f = locale.format('%.{}f'.format(decimals), v, grouping=True)
+    return '${}'.format(f)
 
 
 class TokenData:
@@ -557,7 +558,7 @@ class TelegramMonitorBot:
 *Volume(24h)*: {}
 
 @{}""".format(
-                monetary_format(pdata.price),
+                monetary_format(pdata.price, decimals=5),
                 pdata.percent_change,
                 monetary_format(pdata.market_cap),
                 monetary_format(pdata.volume),
