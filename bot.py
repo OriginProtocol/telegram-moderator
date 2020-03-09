@@ -41,7 +41,8 @@ CMC_SYMBOL_TO_ID = {
     'DAI': 4943,
 }
 CMC_API_KEY = os.environ.get('CMC_API_KEY')
-CMC_QUOTE_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id={}'
+CMC_USD_QUOTE_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id={}'
+CMC_BTC_QUOTE_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id={}&convert=BTC'
 
 
 def first_of(attr, match, it):
@@ -89,17 +90,26 @@ def cmc_get_data(jso, cmc_id, pair_symbol='USD'):
     }
 
 
-def monetary_format(v, decimals=2):
+def decimal_format(v, decimals=2):
     if not v:
         v = 0
-    f = locale.format('%.{}f'.format(decimals), v, grouping=True)
-    return '${}'.format(f)
+    f = locale.format_string('%.{}f'.format(decimals), v, grouping=True)
+    return '{}'.format(f)
+
+
+def monetary_format(v, decimals=2):
+    return '${}'.format(decimal_format(v, decimals))
+
+def btc_format(v):
+    return decimal_format(v, decimals=8)
+
 
 
 class TokenData:
     def __init__(self, symbol, price=None, stamp=datetime.now()):
         self.symbol = symbol
         self._price = price
+        self._btcPrice = 0
         self._percent_change = 0
         self._volume = 0
         self._market_cap = 0
@@ -108,12 +118,12 @@ class TokenData:
         else:
             self.stamp = None
 
-    def _fetch_from_cmc(self):
+    def _fetch_from_cmc(self, url_template):
         """ Get quote data for a specific known symbol """
         jso = None
 
         cmc_id = CMC_SYMBOL_TO_ID.get(self.symbol)
-        url = CMC_QUOTE_URL.format(cmc_id)
+        url = url_template.format(cmc_id)
         r = requests.get(url, headers={
             'X-CMC_PRO_API_KEY': CMC_API_KEY,
             'Accept': 'application/json',
@@ -130,13 +140,18 @@ class TokenData:
 
     def update(self):
         """ Fetch price from binance """
+        jso = None
+        data = None
         if self.stamp is None or (
             self.stamp is not None
             and self.stamp < datetime.now() - CACHE_DURATION
         ):
-            # CMC
-            jso = self._fetch_from_cmc()
-            data = cmc_get_data(jso, CMC_SYMBOL_TO_ID[self.symbol])
+            # CMC USD
+            try:
+                jso = self._fetch_from_cmc(CMC_USD_QUOTE_URL)
+                data = cmc_get_data(jso, CMC_SYMBOL_TO_ID[self.symbol])
+            except Exception as err:
+                print('Error fetching data: ', str(err))
             if data is not None:
                 self._price = data.get('price')
                 self._percent_change = data.get('percent_change')
@@ -144,10 +159,24 @@ class TokenData:
                 self._market_cap = data.get('market_cap')
                 self.stamp = datetime.now()
 
+            # CMC BTC
+            try:
+                jso = self._fetch_from_cmc(CMC_BTC_QUOTE_URL)
+                data = cmc_get_data(jso, CMC_SYMBOL_TO_ID[self.symbol], 'BTC')
+            except Exception as err:
+                print('Error fetching data: ', str(err))
+            if data is not None:
+                self._btcPrice = data.get('price')
+
     @property
     def price(self):
         self.update()
         return self._price
+
+    @property
+    def btcPrice(self):
+        self.update()
+        return self._btcPrice
 
     @property
     def volume(self):
@@ -553,13 +582,15 @@ class TelegramMonitorBot:
             pdata = self.cached_prices[symbol]
             message = """
 *Origin Token* (OGN)
-*Price*: {} ({}%)
+*USD Price*: {} ({}%)
+*BTC Price*: {}
 *Market Cap*: {}
 *Volume(24h)*: {}
 
 @{}""".format(
                 monetary_format(pdata.price, decimals=5),
                 pdata.percent_change,
+                btc_format(pdata.btcPrice),
                 monetary_format(pdata.market_cap),
                 monetary_format(pdata.volume),
                 update.effective_user.username,
