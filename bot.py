@@ -259,6 +259,8 @@ class TelegramMonitorBot:
         if CMC_API_KEY is not None:
             self.available_commands.append('price')
 
+        print('Available commands: {}'.format(', '.join(self.available_commands)))
+
         # Cached token prices
         self.cached_prices = {}
 
@@ -557,6 +559,7 @@ class TelegramMonitorBot:
         """
         chat_id = None
         command = None
+        message_id = update.effective_message.message_id
 
         command = command_from_message(update.effective_message)
 
@@ -595,8 +598,15 @@ class TelegramMonitorBot:
                 monetary_format(pdata.volume),
                 update.effective_user.username,
             )
+
             bot.send_message(chat_id, message, parse_mode=telegram.ParseMode.MARKDOWN)
 
+            # Delete the command message
+            try:
+                bot.delete_message(chat_id, message_id)
+            except Exception:
+                # nbd if we cannot delete it
+                pass
 
     def error(self, bot, update, error):
         """ Log Errors caused by Updates. """
