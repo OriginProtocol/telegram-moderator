@@ -263,6 +263,7 @@ class TelegramMonitorBot:
 
         # Cached token prices
         self.cached_prices = {}
+        self.last_message_out = None
 
 
     @MWT(timeout=60*60)
@@ -599,9 +600,27 @@ class TelegramMonitorBot:
                 update.effective_user.username,
             )
 
-            bot.send_message(chat_id, message, parse_mode=telegram.ParseMode.MARKDOWN)
+            # If the last message we sent was price, delete it to reduce spam
+            if (
+                self.last_message_out
+                and self.last_message_out.get('type') == 'price'
+                and self.last_message_out['message'].message_id
+            ):
+                bot.delete_message(
+                    chat_id,
+                    self.last_message_out['message'].message_id
+                )
 
-            # Delete the command message
+            self.last_message_out = {
+                'type': 'price',
+                'message': bot.send_message(
+                    chat_id,
+                    message,
+                    parse_mode=telegram.ParseMode.MARKDOWN
+                ),
+            }
+
+            # Delete the command message as well
             try:
                 bot.delete_message(chat_id, message_id)
             except Exception:
