@@ -109,8 +109,9 @@ class TokenData:
     def __init__(self, symbol, price=None, stamp=datetime.now()):
         self.symbol = symbol
         self._price = price
-        self._btcPrice = 0
+        self._btc_price = 0
         self._percent_change = 0
+        self._btc_percent_change = 0
         self._volume = 0
         self._market_cap = 0
         if price is not None:
@@ -166,7 +167,8 @@ class TokenData:
             except Exception as err:
                 print('Error fetching data: ', str(err))
             if data is not None:
-                self._btcPrice = data.get('price')
+                self._btc_price = data.get('price')
+                self._btc_percent_change = data.get('percent_change')
 
     @property
     def price(self):
@@ -174,9 +176,14 @@ class TokenData:
         return self._price
 
     @property
-    def btcPrice(self):
+    def btc_price(self):
         self.update()
-        return self._btcPrice
+        return self._btc_price
+
+    @property
+    def btc_percent_change(self):
+        self.update()
+        return self._btc_percent_change
 
     @property
     def volume(self):
@@ -587,14 +594,15 @@ class TelegramMonitorBot:
             message = """
 *Origin Token* (OGN)
 *USD Price*: {} ({}%)
-*BTC Price*: {}
+*BTC Price*: {} ({}%)
 *Market Cap*: {}
 *Volume(24h)*: {}
 
 @{}""".format(
                 monetary_format(pdata.price, decimals=5),
                 pdata.percent_change,
-                btc_format(pdata.btcPrice),
+                btc_format(pdata.btc_price),
+                pdata.btc_percent_change,
                 monetary_format(pdata.market_cap),
                 monetary_format(pdata.volume),
                 update.effective_user.username,
