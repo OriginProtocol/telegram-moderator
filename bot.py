@@ -703,7 +703,7 @@ class TelegramMonitorBot:
 
         # on noncommand i.e message - echo the message on Telegram
         dp.add_handler(MessageHandler(
-            Filters.all,
+            Filters.user(777000),
             lambda bot, update : self.logger(bot, update)
         ))
 
