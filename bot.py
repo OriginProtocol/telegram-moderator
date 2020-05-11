@@ -15,6 +15,7 @@ import sys
 import re
 import unidecode
 import locale
+import traceback
 from time import strftime
 from datetime import datetime, timedelta
 
@@ -153,6 +154,7 @@ class TokenData:
                 data = cmc_get_data(jso, CMC_SYMBOL_TO_ID[self.symbol])
             except Exception as err:
                 print('Error fetching data: ', str(err))
+                print(traceback.format_exc())
             if data is not None:
                 self._price = data.get('price')
                 self._percent_change = data.get('percent_change')
@@ -166,6 +168,7 @@ class TokenData:
                 data = cmc_get_data(jso, CMC_SYMBOL_TO_ID[self.symbol], 'BTC')
             except Exception as err:
                 print('Error fetching data: ', str(err))
+                print(traceback.format_exc())
             if data is not None:
                 self._btc_price = data.get('price')
                 self._btc_percent_change = data.get('percent_change')
@@ -307,7 +310,8 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            if self.notify_chat:
+                bot.send_message(chat_id=self.notify_chat, text=log_message)
 
         if self.name_ban_re and self.name_ban_re.search(update.message.from_user.username or ''):
             # Logging
@@ -326,7 +330,8 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            if self.notify_chat:
+                bot.send_message(chat_id=self.notify_chat, text=log_message)
 
 
     def security_check_message(self, bot, update):
@@ -358,7 +363,8 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            if self.notify_chat:
+                bot.send_message(chat_id=self.notify_chat, text=log_message)
 
         if self.message_ban_re and self.message_ban_re.search(message):
             # Logging
@@ -379,7 +385,8 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            if self.notify_chat:
+                bot.send_message(chat_id=self.notify_chat, text=log_message)
 
         elif self.message_hide_re and self.message_hide_re.search(message):
             # Logging
@@ -398,7 +405,8 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            if self.notify_chat:
+                bot.send_message(chat_id=self.notify_chat, text=log_message)
 
 
     def attachment_check(self, bot, update):
@@ -430,59 +438,88 @@ class TelegramMonitorBot:
             s.commit()
             s.close()
             # Notify channel
-            bot.sendMessage(chat_id=self.notify_chat, text=log_message)
+            if self.notify_chat:
+                bot.send_message(chat_id=self.notify_chat, text=log_message)
 
 
     def logger(self, bot, update):
-        """ Primary Logger. Handles incoming bot messages and saves them to DB """
+        """ Primary Logger. Handles incoming bot messages and saves them to DB
+
+        :param bot: telegram.Bot https://python-telegram-bot.readthedocs.io/en/stable/telegram.bot.html
+        :param update: telegram.Update https://python-telegram-bot.readthedocs.io/en/stable/telegram.update.html
+        """
+
         try:
-            user = update.message.from_user
 
-            # Limit bot to monitoring certain chats
-            if update.message.chat_id not in self.chat_ids:
-                print("Message from user {} is from chat_id not being monitored: {}".format(
-                    user.id,
-                    update.message.chat_id)
-                )
-                return
+            message = update.message
 
-            if self.id_exists(user.id):
-                self.log_message(user.id, update.message.text,
-                                 update.message.chat_id)
-            else:
-                add_user_success = self.add_user(
-                    user.id,
-                    user.first_name,
-                    user.last_name,
-                    user.username)
+            # message is optional
+            if message is None:
 
-                if add_user_success:
-                    self.log_message(
-                        user.id, update.message.text, update.message.chat_id)
-                    print("User added: {}".format(user.id))
+                if update.effective_message is None:
+                    print("No message included in update")
+                    return
+
+                message = update.effective_message
+
+            if message:
+
+                user = message.from_user
+
+                # Limit bot to monitoring certain chats
+                if message.chat_id not in self.chat_ids:
+                    from_user = "UNKNOWN"
+                    if user:
+                        from_user = user.id
+                    print("Message from user {} is from chat_id not being monitored: {}".format(
+                        from_user,
+                        message.chat_id)
+                    )
+                    return
+
+                if self.id_exists(user.id):
+                    self.log_message(user.id, message.text,
+                                     message.chat_id)
                 else:
-                    print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
+                    add_user_success = self.add_user(
+                        user.id,
+                        user.first_name,
+                        user.last_name,
+                        user.username)
 
-            user_name = (
-                user.username or
-                "{} {}".format(user.first_name, user.last_name) or
-                "<none>").encode('utf-8')
-            if update.message.text:
-                print("{} {} ({}) : {}".format(
-                    strftime("%Y-%m-%dT%H:%M:%S"),
-                    user.id,
-                    user_name,
-                    update.message.text.encode('utf-8'))
-                )
+                    if add_user_success:
+                        self.log_message(
+                            user.id, message.text, message.chat_id)
+                        print("User added: {}".format(user.id))
+                    else:
+                        print("Something went wrong adding the user {}".format(user.id), file=sys.stderr)
+
+                user_name = (
+                    user.username or
+                    "{} {}".format(user.first_name, user.last_name) or
+                    "<none>").encode('utf-8')
+                if message.text:
+                    print("{} {} ({}) : {}".format(
+                        strftime("%Y-%m-%dT%H:%M:%S"),
+                        user.id,
+                        user_name,
+                        update.message.text.encode('utf-8'))
+                    )
+                else:
+                    print("{} {} ({}) : non-message".format(
+                        strftime("%Y-%m-%dT%H:%M:%S"),
+                        user.id,
+                        user_name)
+                    )
+
             else:
-                print("{} {} ({}) : non-message".format(
-                    strftime("%Y-%m-%dT%H:%M:%S"),
-                    user.id,
-                    user_name)
-                )
+                print("Update and user not logged because no message was found")
 
             # Don't check admin activity
-            is_admin = update.message.from_user.id in self.get_admin_ids(bot, update.message.chat_id)
+            is_admin = False
+            if message:
+                is_admin = message.from_user.id in self.get_admin_ids(bot, message.chat_id)
+
             if is_admin and self.admin_exempt:
                 print("👮‍♂️ Skipping checks. User is admin: {}".format(user.id))
             else:
@@ -492,7 +529,8 @@ class TelegramMonitorBot:
                 self.security_check_message(bot, update)
 
         except Exception as e:
-            print("Error[292]: {}".format(e))
+            print("Error[521]: {}".format(e))
+            print(traceback.format_exc())
             print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
 
     # DB queries
@@ -527,7 +565,7 @@ class TelegramMonitorBot:
                 polarity = analysis.sentiment.polarity
                 subjectivity = analysis.sentiment.subjectivity
             except Exception as e:
-                print(str(e))
+                print("Error translating message: {}".format(e))
             msg1 = Message(user_id=user_id, message=user_message, chat_id=chat_id, 
                 language_code=language_code, english_message=english_message, polarity=polarity,
                 subjectivity=subjectivity)
@@ -536,6 +574,7 @@ class TelegramMonitorBot:
             s.close()
         except Exception as e:
             print("Error logging message: {}".format(e))
+            print(traceback.format_exc())
 
 
     def add_user(self, user_id, first_name, last_name, username):
@@ -552,6 +591,7 @@ class TelegramMonitorBot:
             return self.id_exists(user_id)
         except Exception as e:
             print("Error[347]: {}".format(e))
+            print(traceback.format_exc())
 
     def handle_command(self, bot, update):
         """ Handles commands
