@@ -238,7 +238,7 @@ class TelegramMonitorBot:
         if not os.environ.get('IGNORE_USER_IDS'):
             self.ignore_user_ids = []
         else:
-            self.ignore_user_ids = os.environ['IGNORE_USER_IDS'].split(',')
+            self.ignore_user_ids = list(map(int, os.environ['IGNORE_USER_IDS'].split(',')))
 
         # List of chat ids that bot should monitor
         self.chat_ids = (
@@ -460,7 +460,7 @@ class TelegramMonitorBot:
             update.effective_user is None
             or update.effective_user.id in self.ignore_user_ids
         ):
-            print("Ignoring update.")
+            print("{}: Ignoring update.".format(update.update_id))
             return
 
         try:
