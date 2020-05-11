@@ -229,9 +229,16 @@ class TelegramMonitorBot:
             print("🔵 MESSAGE_BAN_PATTERNS:\n", os.environ['MESSAGE_BAN_PATTERNS'])
             print("🔵 MESSAGE_HIDE_PATTERNS:\n", os.environ['MESSAGE_HIDE_PATTERNS'])
             print("🔵 NAME_BAN_PATTERNS:\n", os.environ['NAME_BAN_PATTERNS'])
+            print("🔵 IGNORE_USER_IDS:\n", os.environ.get('IGNORE_USER_IDS'))
 
         # Channel to notify of violoations, e.g. '@channelname'
         self.notify_chat = os.environ['NOTIFY_CHAT'] if 'NOTIFY_CHAT' in os.environ else None
+
+        # Ignore these user IDs
+        if not os.environ.get('IGNORE_USER_IDS'):
+            self.ignore_user_ids = []
+        else:
+            self.ignore_user_ids = os.environ['IGNORE_USER_IDS'].split(',')
 
         # List of chat ids that bot should monitor
         self.chat_ids = (
@@ -448,6 +455,13 @@ class TelegramMonitorBot:
         :param bot: telegram.Bot https://python-telegram-bot.readthedocs.io/en/stable/telegram.bot.html
         :param update: telegram.Update https://python-telegram-bot.readthedocs.io/en/stable/telegram.update.html
         """
+
+        if (
+            update.effective_user is None
+            or update.effective_user.id in self.ignore_user_ids
+        ):
+            print("Ignoring update.")
+            return
 
         try:
 
@@ -703,7 +717,7 @@ class TelegramMonitorBot:
 
         # on noncommand i.e message - echo the message on Telegram
         dp.add_handler(MessageHandler(
-            Filters.user(777000),
+            Filters.all,
             lambda bot, update : self.logger(bot, update)
         ))
 
