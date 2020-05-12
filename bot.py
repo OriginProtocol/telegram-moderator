@@ -668,10 +668,14 @@ class TelegramMonitorBot:
                 and self.last_message_out.get('type') == 'price'
                 and self.last_message_out['message'].message_id
             ):
-                bot.delete_message(
-                    chat_id,
-                    self.last_message_out['message'].message_id
-                )
+                try:
+                    bot.delete_message(
+                        chat_id,
+                        self.last_message_out['message'].message_id
+                    )
+                except Exception as err:
+                    print('Unable to delete previous price message: ', err)
+                    print(traceback.format_exc())
 
             self.last_message_out = {
                 'type': 'price',
