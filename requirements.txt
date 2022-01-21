@@ -5,5 +5,5 @@ configparser==3.5.0
 Unidecode==1.0.22
 googletrans==2.4.0
 textblob==0.15.3
-ipython==5.5.0
+ipython==7.16.3
 requests>=2.23.0
